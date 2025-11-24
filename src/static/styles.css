@@ -165,6 +165,11 @@ footer {
   gap: 8px;
 }
 
+.participants-list {
+  list-style: none;
+  padding-left: 0;
+}
+
 .participant {
   display: flex;
   align-items: center;
@@ -204,4 +209,22 @@ footer {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Delete button next to participants */
+.delete-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+}
+
+.delete-btn:hover {
+  color: #9a0007;
 }

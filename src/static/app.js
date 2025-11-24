@@ -54,6 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
           participants.forEach((p) => {
             const displayName = getDisplayName(p);
             const initials = getInitials(displayName);
+            const emailValue = getEmail(p);
             const li = document.createElement("li");
             li.className = "participant";
 
@@ -66,8 +67,42 @@ document.addEventListener("DOMContentLoaded", () => {
             nameSpan.className = "name";
             nameSpan.textContent = displayName;
 
+            // delete button
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.title = `Unregister ${displayName}`;
+            deleteBtn.type = "button";
+            deleteBtn.innerHTML = "🗑️";
+            deleteBtn.addEventListener("click", async (e) => {
+              e.preventDefault();
+              const confirmRemove = confirm(`Remove ${displayName} from ${name}?`);
+              if (!confirmRemove) return;
+              try {
+                const resp = await fetch(`/activities/${encodeURIComponent(name)}/participants?email=${encodeURIComponent(emailValue)}`, { method: "DELETE" });
+                const resJson = await resp.json();
+                if (resp.ok) {
+                  messageDiv.textContent = resJson.message;
+                  messageDiv.className = "success";
+                  messageDiv.classList.remove("hidden");
+                  // Reload page so UI reflects the removal
+                  window.location.reload();
+                  setTimeout(() => messageDiv.classList.add("hidden"), 4000);
+                } else {
+                  messageDiv.textContent = resJson.detail || "Failed to remove participant";
+                  messageDiv.className = "error";
+                  messageDiv.classList.remove("hidden");
+                }
+              } catch (err) {
+                console.error("Error removing participant:", err);
+                messageDiv.textContent = "Failed to contact server";
+                messageDiv.className = "error";
+                messageDiv.classList.remove("hidden");
+              }
+            });
+
             li.appendChild(avatar);
             li.appendChild(nameSpan);
+            li.appendChild(deleteBtn);
             participantsList.appendChild(li);
           });
         }
@@ -111,6 +146,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return name.trim().charAt(0).toUpperCase();
   }
 
+  // Helper: extract an email string from a participant entry (string or object)
+  function getEmail(participant) {
+    if (!participant) return "";
+    if (typeof participant === "string") return participant;
+    if (participant.email) return participant.email;
+    return String(participant);
+  }
+
   // Helper: simple escape to avoid injection when inserting as text via innerHTML elsewhere
   function escapeHtml(str) {
     if (typeof str !== "string") return str;
@@ -143,8 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
-        // Refresh activities to update participant lists and availability
-        fetchActivities();
+        // Reload page so the activity lists reflect the new signup
+        window.location.reload();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
