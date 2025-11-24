@@ -142,3 +142,89 @@ footer {
   padding: 20px;
   color: #666;
 }
+
+.participants-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #eee;
+}
+
+.participants-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.participants-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.participants-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.participant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #f0f0f5;
+  font-size: 14px;
+  color: #333;
+}
+
+.participant.empty {
+  color: #777;
+  font-style: italic;
+  background: transparent;
+  border: none;
+  padding-left: 0;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #1a237e;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex: 0 0 30px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.participant .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Delete button next to participants */
+.delete-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+}
+
+.delete-btn:hover {
+  color: #9a0007;
+}

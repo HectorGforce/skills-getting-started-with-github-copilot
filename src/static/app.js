@@ -13,19 +13,102 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Reset select options (keep placeholder)
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft = details.max_participants - details.participants.length;
+        const spotsLeft = details.max_participants - (details.participants ? details.participants.length : 0);
 
+        // Base content
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <h4>${escapeHtml(name)}</h4>
+          <p>${escapeHtml(details.description)}</p>
+          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
+
+        // Participants section
+        const participantsSection = document.createElement("div");
+        participantsSection.className = "participants-section";
+
+        const participantsTitle = document.createElement("p");
+        participantsTitle.className = "participants-title";
+        participantsTitle.textContent = "Participants";
+        participantsSection.appendChild(participantsTitle);
+
+        const participantsList = document.createElement("ul");
+        participantsList.className = "participants-list";
+
+        const participants = Array.isArray(details.participants) ? details.participants : [];
+
+        if (participants.length === 0) {
+          const li = document.createElement("li");
+          li.className = "participant empty";
+          li.textContent = "No participants yet";
+          participantsList.appendChild(li);
+        } else {
+          participants.forEach((p) => {
+            const displayName = getDisplayName(p);
+            const initials = getInitials(displayName);
+            const emailValue = getEmail(p);
+            const li = document.createElement("li");
+            li.className = "participant";
+
+            // avatar + name
+            const avatar = document.createElement("span");
+            avatar.className = "avatar";
+            avatar.textContent = initials;
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "name";
+            nameSpan.textContent = displayName;
+
+            // delete button
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.title = `Unregister ${displayName}`;
+            deleteBtn.type = "button";
+            deleteBtn.innerHTML = "🗑️";
+            deleteBtn.addEventListener("click", async (e) => {
+              e.preventDefault();
+              const confirmRemove = confirm(`Remove ${displayName} from ${name}?`);
+              if (!confirmRemove) return;
+              try {
+                const resp = await fetch(`/activities/${encodeURIComponent(name)}/participants?email=${encodeURIComponent(emailValue)}`, { method: "DELETE" });
+                const resJson = await resp.json();
+                if (resp.ok) {
+                  messageDiv.textContent = resJson.message;
+                  messageDiv.className = "success";
+                  messageDiv.classList.remove("hidden");
+                  // Reload page so UI reflects the removal
+                  window.location.reload();
+                  setTimeout(() => messageDiv.classList.add("hidden"), 4000);
+                } else {
+                  messageDiv.textContent = resJson.detail || "Failed to remove participant";
+                  messageDiv.className = "error";
+                  messageDiv.classList.remove("hidden");
+                }
+              } catch (err) {
+                console.error("Error removing participant:", err);
+                messageDiv.textContent = "Failed to contact server";
+                messageDiv.className = "error";
+                messageDiv.classList.remove("hidden");
+              }
+            });
+
+            li.appendChild(avatar);
+            li.appendChild(nameSpan);
+            li.appendChild(deleteBtn);
+            participantsList.appendChild(li);
+          });
+        }
+
+        participantsSection.appendChild(participantsList);
+        activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
 
@@ -39,6 +122,47 @@ document.addEventListener("DOMContentLoaded", () => {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
     }
+  }
+
+  // Helper: derive a display name from participant entry (string or object)
+  function getDisplayName(participant) {
+    if (!participant) return "Unknown";
+    if (typeof participant === "string") {
+      // If it's an email, show before @; otherwise full string
+      const at = participant.indexOf("@");
+      return at > 0 ? participant.slice(0, at) : participant;
+    }
+    if (participant.name) return participant.name;
+    if (participant.email) {
+      const at = participant.email.indexOf("@");
+      return at > 0 ? participant.email.slice(0, at) : participant.email;
+    }
+    return String(participant);
+  }
+
+  // Helper: get initials (single letter) from display name
+  function getInitials(name) {
+    if (!name) return "?";
+    return name.trim().charAt(0).toUpperCase();
+  }
+
+  // Helper: extract an email string from a participant entry (string or object)
+  function getEmail(participant) {
+    if (!participant) return "";
+    if (typeof participant === "string") return participant;
+    if (participant.email) return participant.email;
+    return String(participant);
+  }
+
+  // Helper: simple escape to avoid injection when inserting as text via innerHTML elsewhere
+  function escapeHtml(str) {
+    if (typeof str !== "string") return str;
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   // Handle form submission
@@ -62,6 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        // Reload page so the activity lists reflect the new signup
+        window.location.reload();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
